@@ -16,6 +16,8 @@ in vec2 UV;
 
 out vec4 frag_color;
 
+float EPSILON = 1E-5;
+
 struct intersect {
 	bool ok;
 	float dist;
@@ -58,7 +60,7 @@ intersect is_ray_through(vec3 ray, vec3 origin, vec3 p1, vec3 p2, vec3 p3) {
 
 	intersect inter;
 	inter.ok = b1 && b2;
-	inter.dist = t;
+	inter.dist = -t;
 	inter.inter = intersection;
 	return inter;
 }
@@ -66,7 +68,7 @@ intersect is_ray_through(vec3 ray, vec3 origin, vec3 p1, vec3 p2, vec3 p3) {
 face_intersect face_through(vec3 ray, vec3 origin) {
 	face_intersect f_inter;
 	f_inter.face_id = -1;
-	float min_dist = 10000;
+	float min_dist = 1E5;
 
 	for (int i = 0; i < 3*n_triangles; i+=3) {
 		vec3 p1 = texelFetch(tex, i+0, 0).rgb;
@@ -74,7 +76,7 @@ face_intersect face_through(vec3 ray, vec3 origin) {
 		vec3 p3 = texelFetch(tex, i+2, 0).rgb;
 
 		intersect inter = is_ray_through(ray, eye, p1, p2, p3);
-		if (inter.ok && -inter.dist > 0.01 && -inter.dist < min_dist) {
+		if (inter.ok && inter.dist > EPSILON && inter.dist < min_dist) {
 			min_dist = inter.dist;
 			f_inter.face_id = i;
 			f_inter.inter = inter.inter;
@@ -93,7 +95,7 @@ bool is_in_shadow(int face_id, vec3 origin) {
 		vec3 p3 = texelFetch(tex, i+2, 0).rgb;
 		intersect inter = is_ray_through(-sun_dir, origin, p1, p2, p3);
 
-		if (inter.ok && inter.dist > 0.01)
+		if (inter.ok && inter.dist > EPSILON)
 			return true;
 	}
 

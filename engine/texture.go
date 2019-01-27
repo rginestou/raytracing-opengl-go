@@ -16,7 +16,7 @@ func textureFromData(data []float32) uint32 {
 	gl.TexParameteri(gl.TEXTURE_1D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_1D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 
-	gl.TexImage1D(gl.TEXTURE_1D, 0, gl.RGB, int32(len(data)), 0, gl.RGB, gl.FLOAT, gl.Ptr(data))
+	gl.TexImage1D(gl.TEXTURE_1D, 0, gl.RGB32F, int32(len(data)), 0, gl.RGB, gl.FLOAT, gl.Ptr(data))
 
 	return textureID
 }

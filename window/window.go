@@ -31,7 +31,6 @@ func Create(width, height int) {
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.Samples, 4)
 
 	// Create Window
 	var err error
@@ -41,11 +40,6 @@ func Create(width, height int) {
 	}
 
 	window.MakeContextCurrent()
-
-	// Set inputs callbacks
-	// window.SetKeyCallback(input.KeyCallBack)
-	// window.SetCursorPosCallback(input.MouseCallback)
-	// window.SetScrollCallback(input.ScrollCallback)
 
 	// Init GL context
 	if err := gl.Init(); err != nil {
