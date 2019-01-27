@@ -5,6 +5,9 @@ uniform vec3 eye;
 uniform vec3 up;
 uniform vec3 right;
 
+uniform int width;
+uniform int height;
+
 uniform int n_triangles;
 uniform sampler1D tex;
 
@@ -98,15 +101,36 @@ bool is_in_shadow(int face_id, vec3 origin) {
 }
 
 void main() {
-	vec3 ray = normalize(normalize(dir)*3 + right * UV.x + up * UV.y);
+	// Antialiasing (supersampling)
+	float offsets[15] = float[](
+		0, 0, 0.4,
+		0.3, 0.3, 0.15,
+		0.3, -0.3, 0.15,
+		-0.3, -0.3, 0.15,
+		-0.3, 0.3, 0.15);
 
-	vec3 color = vec3(1,1,1);
-	face_intersect f_inter = face_through(ray, eye);
-	if (f_inter.face_id == -1) {
-	} else if (is_in_shadow(f_inter.face_id, f_inter.inter)) {
-		color = vec3(0.1, 0.1, 0.1);
-	} else {
-		color = vec3(0.5, 0.5, 0.5);
+	vec3 color = vec3(0,0,0);
+	for (int o = 0; o < 5; o++) {
+		float offset_x = offsets[3*o+0];
+		float offset_y = offsets[3*o+1];
+		float weight = offsets[3*o+2];
+
+		// Ray vector
+		vec3 ray = normalize(normalize(dir)*3 +
+			right * (UV.x+offset_x/width) +
+			up * (UV.y+offset_y/height));
+
+		face_intersect f_inter = face_through(ray, eye);
+
+		vec3 color_tmp = vec3(1,1,1);
+		if (f_inter.face_id == -1) {
+		} else if (is_in_shadow(f_inter.face_id, f_inter.inter)) {
+			color_tmp = vec3(0.1, 0.1, 0.1);
+		} else {
+			color_tmp = vec3(0.5, 0.5, 0.5);
+		}
+
+		color += weight * color_tmp;
 	}
 
 	frag_color = vec4(color, 1.0);

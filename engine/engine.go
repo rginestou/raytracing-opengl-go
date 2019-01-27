@@ -50,10 +50,14 @@ func Run(window *glfw.Window) {
 	eyeUniform := gl.GetUniformLocation(prog, gl.Str("eye\x00"))
 	rightUniform := gl.GetUniformLocation(prog, gl.Str("right\x00"))
 	upUniform := gl.GetUniformLocation(prog, gl.Str("up\x00"))
+	widthUniform := gl.GetUniformLocation(prog, gl.Str("width\x00"))
+	heightUniform := gl.GetUniformLocation(prog, gl.Str("height\x00"))
 
 	eye := mgl.Vec3{3, -0.3, -2}
 	center := mgl.Vec3{1, 0.4, 0}
 	view := mgl.LookAtV(eye, center, mgl.Vec3{0, 1, 0}).Inv()
+
+	width, height := window.GetSize()
 
 	dir := view.Mul4x1(mgl.Vec4{0, 0, 1, 0})
 	right := view.Mul4x1(mgl.Vec4{1, 0, 0, 0})
@@ -62,6 +66,8 @@ func Run(window *glfw.Window) {
 	gl.Uniform3f(eyeUniform, eye.X(), eye.Y(), eye.Z())
 	gl.Uniform3f(rightUniform, right.X(), right.Y(), right.Z())
 	gl.Uniform3f(upUniform, up.X(), up.Y(), up.Z())
+	gl.Uniform1i(widthUniform, int32(width))
+	gl.Uniform1i(heightUniform, int32(height))
 
 	gl.ClearColor(1.0, 1.0, 1.0, 1.0)
 	glfw.SwapInterval(1)
