@@ -10,6 +10,7 @@ uniform int height;
 
 uniform int n_triangles;
 uniform sampler1D tex;
+uniform sampler1D tex;
 
 in vec3 color;
 in vec2 UV;
@@ -22,14 +23,31 @@ struct intersect {
 	bool ok;
 	float dist;
 	vec3 inter;
+	vec3 normal;
 };
 
 struct face_intersect {
 	int face_id;
 	vec3 inter;
+	vec3 normal;
 };
 
-vec3 sun_dir = vec3(2, 1, 0.5);
+struct material_t {
+	vec4 ambiant;
+	vec4 diffuse;
+	vec4 specular;
+	float shininess;
+};
+
+uniform material_t material;
+
+struct light_t {
+	vec3 direction;
+	vec4 ambiant;
+	float intensity;
+};
+
+uniform light_t light;
 
 intersect is_ray_through(vec3 ray, vec3 origin, vec3 p1, vec3 p2, vec3 p3) {
 	// Compute edges
@@ -62,6 +80,7 @@ intersect is_ray_through(vec3 ray, vec3 origin, vec3 p1, vec3 p2, vec3 p3) {
 	inter.ok = b1 && b2;
 	inter.dist = -t;
 	inter.inter = intersection;
+	inter.normal = n;
 	return inter;
 }
 
@@ -80,6 +99,7 @@ face_intersect face_through(vec3 ray, vec3 origin) {
 			min_dist = inter.dist;
 			f_inter.face_id = i;
 			f_inter.inter = inter.inter;
+			f_inter.normal = inter.normal;
 		}
 	}
 
@@ -93,7 +113,7 @@ bool is_in_shadow(int face_id, vec3 origin) {
 		vec3 p1 = texelFetch(tex, i+0, 0).rgb;
 		vec3 p2 = texelFetch(tex, i+1, 0).rgb;
 		vec3 p3 = texelFetch(tex, i+2, 0).rgb;
-		intersect inter = is_ray_through(-sun_dir, origin, p1, p2, p3);
+		intersect inter = is_ray_through(-light.direction, origin, p1, p2, p3);
 
 		if (inter.ok && inter.dist > EPSILON)
 			return true;
@@ -111,7 +131,7 @@ void main() {
 		-0.3, -0.3, 0.15,
 		-0.3, 0.3, 0.15);
 
-	vec3 color = vec3(0,0,0);
+	vec4 color = vec4(0, 0, 0, 0);
 	for (int o = 0; o < 5; o++) {
 		float offset_x = offsets[3*o+0];
 		float offset_y = offsets[3*o+1];
@@ -124,16 +144,24 @@ void main() {
 
 		face_intersect f_inter = face_through(ray, eye);
 
-		vec3 color_tmp = vec3(1,1,1);
-		if (f_inter.face_id == -1) {
-		} else if (is_in_shadow(f_inter.face_id, f_inter.inter)) {
-			color_tmp = vec3(0.1, 0.1, 0.1);
-		} else {
-			color_tmp = vec3(0.5, 0.5, 0.5);
+		vec4 color_tmp = light.ambiant;
+		if (f_inter.face_id >= 0) {
+			// Face exposition
+			float exposition = dot(normalize(f_inter.normal), normalize(light.direction));
+
+			// Ambiant color
+			vec4 ambiant_color = light.ambiant * material.ambiant;
+			vec4 diffuse_color = light.intensity * material.diffuse * exposition;
+			vec4 specular_color = light.intensity * material.specular * 0;
+
+			color_tmp = ambiant_color;
+			if (is_in_shadow(f_inter.face_id, f_inter.inter)) {
+				color_tmp += diffuse_color + specular_color;
+			}
 		}
 
 		color += weight * color_tmp;
 	}
 
-	frag_color = vec4(color, 1.0);
+	frag_color = color;
 }

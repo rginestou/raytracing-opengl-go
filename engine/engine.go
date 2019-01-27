@@ -51,10 +51,28 @@ func Run(window *glfw.Window) {
 	widthUniform := gl.GetUniformLocation(prog, gl.Str("width\x00"))
 	heightUniform := gl.GetUniformLocation(prog, gl.Str("height\x00"))
 
+	materialAmbiantUniform := gl.GetUniformLocation(prog, gl.Str("material.ambiant\x00"))
+	materialDiffuseUniform := gl.GetUniformLocation(prog, gl.Str("material.diffuse\x00"))
+	materialSpecularUniform := gl.GetUniformLocation(prog, gl.Str("material.specular\x00"))
+	materialShininessUniform := gl.GetUniformLocation(prog, gl.Str("material.shininess\x00"))
+
+	lightDirUniform := gl.GetUniformLocation(prog, gl.Str("light.direction\x00"))
+	lightAmbiantUniform := gl.GetUniformLocation(prog, gl.Str("light.ambiant\x00"))
+	lightIntensityUniform := gl.GetUniformLocation(prog, gl.Str("light.intensity\x00"))
+
 	gl.Uniform1i(texUniform, 0)
 	gl.Uniform1i(nTrianglesUniform, int32(len(triangles)/9))
 	gl.Uniform1i(widthUniform, int32(width))
 	gl.Uniform1i(heightUniform, int32(height))
+
+	gl.Uniform4f(materialAmbiantUniform, 0.25, 0.25, 0.25, 1)
+	gl.Uniform4f(materialDiffuseUniform, 0.4, 0.4, 0.4, 1)
+	gl.Uniform4f(materialSpecularUniform, 0.774597, 0.774597, 0.774597, 1)
+	gl.Uniform1f(materialShininessUniform, 76.8)
+
+	gl.Uniform3f(lightDirUniform, -1.54, -0.2, 2.3)
+	gl.Uniform4f(lightAmbiantUniform, 1, 1, 1, 1)
+	gl.Uniform1f(lightIntensityUniform, 0.95)
 
 	// Engine state
 	isRunning := true
@@ -78,7 +96,7 @@ func Run(window *glfw.Window) {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// View
-		eye := mgl.Vec3{5, 1.5, 5}
+		eye := mgl.Vec3{7, 1.5, 7}
 		rot := mgl.Rotate3DY(float32(theta))
 		eye = rot.Mul3x1(eye)
 
