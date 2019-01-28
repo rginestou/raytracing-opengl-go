@@ -56,13 +56,7 @@ intersect is_ray_through(vec3 ray, vec3 origin, vec3 p1, vec3 p2, vec3 p3) {
 	vec3 V = p3 - p1;
 	vec3 W = p3 - p2;
 
-	// Compute the normal (check if not null)
-	vec3 direction = cross(U, V);
-	if (length(direction) <= 0.0) {
-		discard;
-	}
-
-	vec3 n = normalize(direction);
+	vec3 n = normalize(cross(U, V));
 	float d = dot(n, p1);
 
 	// Get the intersection with the triangle plan
@@ -99,6 +93,7 @@ face_intersect face_through(vec3 ray, vec3 origin) {
 			vec3 p3 = texelFetch(scene, i+2, 0).rgb;
 
 			intersect inter = is_ray_through(ray, eye, p1, p2, p3);
+
 			if (inter.ok && inter.dist > EPSILON && inter.dist < min_dist) {
 				min_dist = inter.dist;
 				f_inter.obj = obj;
@@ -119,11 +114,10 @@ bool is_in_shadow(int face_id, vec3 origin) {
 	for (int obj = 0; obj < n_objs; obj++) {
 		int n_tri = int(texelFetch(n_triangles, obj, 0).r);
 		for (int i = start; i < start + 3*n_tri; i+=3) {
-			if (i == face_id) continue;
-
 			vec3 p1 = texelFetch(scene, i+0, 0).rgb;
 			vec3 p2 = texelFetch(scene, i+1, 0).rgb;
 			vec3 p3 = texelFetch(scene, i+2, 0).rgb;
+
 			intersect inter = is_ray_through(-light.direction, origin, p1, p2, p3);
 
 			if (inter.ok && -inter.dist > EPSILON)
@@ -145,16 +139,18 @@ void main() {
 		-0.3, -0.3, 0.15,
 		-0.3, 0.3, 0.15);
 
+	vec3 d = normalize(dir);
+	vec3 ld = normalize(light.direction);
+	float r = float(width) / height;
+
 	vec4 color = vec4(0, 0, 0, 1);
 	for (int o = 0; o < 5; o++) {
-		float offset_x = offsets[3*o+0];
-		float offset_y = offsets[3*o+1];
+		float offset_x = offsets[3*o+0] / width;
+		float offset_y = offsets[3*o+1] / height;
 		float weight = offsets[3*o+2];
 
 		// Ray vector
-		vec3 ray = normalize(normalize(dir)*3 +
-			right * (UV.x*width/height+offset_x/width) +
-			up * (UV.y+offset_y/height));
+		vec3 ray = normalize(3 * d + right * (UV.x * r + offset_x) + up * (UV.y + offset_y));
 
 		face_intersect f_inter = face_through(ray, eye);
 
@@ -162,10 +158,7 @@ void main() {
 		if (f_inter.face_id >= 0) {
 			int obj = f_inter.obj;
 
-			// Face exposition
-			float exposition = dot(normalize(f_inter.normal), normalize(-light.direction));
-
-			// Ambiant color
+			float exposition = dot(f_inter.normal, -ld);
 			vec4 ambiant_color = light.ambiant * material[obj].ambiant;
 			vec4 diffuse_color = light.intensity * material[obj].diffuse * exposition;
 			vec4 specular_color = light.intensity * material[obj].specular * 0;
