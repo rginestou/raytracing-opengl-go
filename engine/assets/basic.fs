@@ -8,9 +8,9 @@ uniform vec3 right;
 uniform int width;
 uniform int height;
 
-uniform int n_triangles;
-uniform sampler1D tex;
-uniform sampler1D tex;
+uniform int n_objs;
+uniform sampler1D scene;
+uniform sampler1D n_triangles;
 
 in vec3 color;
 in vec2 UV;
@@ -28,6 +28,7 @@ struct intersect {
 
 struct face_intersect {
 	int face_id;
+	int obj;
 	vec3 inter;
 	vec3 normal;
 };
@@ -39,7 +40,7 @@ struct material_t {
 	float shininess;
 };
 
-uniform material_t material;
+uniform material_t material[2];
 
 struct light_t {
 	vec3 direction;
@@ -89,34 +90,47 @@ face_intersect face_through(vec3 ray, vec3 origin) {
 	f_inter.face_id = -1;
 	float min_dist = 1E5;
 
-	for (int i = 0; i < 3*n_triangles; i+=3) {
-		vec3 p1 = texelFetch(tex, i+0, 0).rgb;
-		vec3 p2 = texelFetch(tex, i+1, 0).rgb;
-		vec3 p3 = texelFetch(tex, i+2, 0).rgb;
+	int start = 0;
+	for (int obj = 0; obj < n_objs; obj++) {
+		int n_tri = int(texelFetch(n_triangles, obj, 0).r);
+		for (int i = start; i < start + 3*n_tri; i+=3) {
+			vec3 p1 = texelFetch(scene, i+0, 0).rgb;
+			vec3 p2 = texelFetch(scene, i+1, 0).rgb;
+			vec3 p3 = texelFetch(scene, i+2, 0).rgb;
 
-		intersect inter = is_ray_through(ray, eye, p1, p2, p3);
-		if (inter.ok && inter.dist > EPSILON && inter.dist < min_dist) {
-			min_dist = inter.dist;
-			f_inter.face_id = i;
-			f_inter.inter = inter.inter;
-			f_inter.normal = inter.normal;
+			intersect inter = is_ray_through(ray, eye, p1, p2, p3);
+			if (inter.ok && inter.dist > EPSILON && inter.dist < min_dist) {
+				min_dist = inter.dist;
+				f_inter.obj = obj;
+				f_inter.face_id = i;
+				f_inter.inter = inter.inter;
+				f_inter.normal = inter.normal;
+			}
 		}
+
+		start += 3 * n_tri;
 	}
 
 	return f_inter;
 }
 
 bool is_in_shadow(int face_id, vec3 origin) {
-	for (int i = 0; i < 3*n_triangles; i+=3) {
-		if (i == face_id) continue;
+	int start = 0;
+	for (int obj = 0; obj < n_objs; obj++) {
+		int n_tri = int(texelFetch(n_triangles, obj, 0).r);
+		for (int i = start; i < start + 3*n_tri; i+=3) {
+			if (i == face_id) continue;
 
-		vec3 p1 = texelFetch(tex, i+0, 0).rgb;
-		vec3 p2 = texelFetch(tex, i+1, 0).rgb;
-		vec3 p3 = texelFetch(tex, i+2, 0).rgb;
-		intersect inter = is_ray_through(-light.direction, origin, p1, p2, p3);
+			vec3 p1 = texelFetch(scene, i+0, 0).rgb;
+			vec3 p2 = texelFetch(scene, i+1, 0).rgb;
+			vec3 p3 = texelFetch(scene, i+2, 0).rgb;
+			intersect inter = is_ray_through(-light.direction, origin, p1, p2, p3);
 
-		if (inter.ok && inter.dist > EPSILON)
-			return true;
+			if (inter.ok && -inter.dist > EPSILON)
+				return true;
+		}
+
+		start += 3 * n_tri;
 	}
 
 	return false;
@@ -131,7 +145,7 @@ void main() {
 		-0.3, -0.3, 0.15,
 		-0.3, 0.3, 0.15);
 
-	vec4 color = vec4(0, 0, 0, 0);
+	vec4 color = vec4(0, 0, 0, 1);
 	for (int o = 0; o < 5; o++) {
 		float offset_x = offsets[3*o+0];
 		float offset_y = offsets[3*o+1];
@@ -146,16 +160,19 @@ void main() {
 
 		vec4 color_tmp = light.ambiant;
 		if (f_inter.face_id >= 0) {
+			int obj = f_inter.obj;
+			obj = 0;
+
 			// Face exposition
-			float exposition = dot(normalize(f_inter.normal), normalize(light.direction));
+			float exposition = dot(normalize(f_inter.normal), normalize(-light.direction));
 
 			// Ambiant color
-			vec4 ambiant_color = light.ambiant * material.ambiant;
-			vec4 diffuse_color = light.intensity * material.diffuse * exposition;
-			vec4 specular_color = light.intensity * material.specular * 0;
+			vec4 ambiant_color = light.ambiant * material[obj].ambiant;
+			vec4 diffuse_color = light.intensity * material[obj].diffuse * exposition;
+			vec4 specular_color = light.intensity * material[obj].specular * 0;
 
 			color_tmp = ambiant_color;
-			if (is_in_shadow(f_inter.face_id, f_inter.inter)) {
+			if (!is_in_shadow(f_inter.face_id, f_inter.inter)) {
 				color_tmp += diffuse_color + specular_color;
 			}
 		}

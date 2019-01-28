@@ -24,25 +24,34 @@ func Run(window *glfw.Window) {
 
 	// Scene geometry
 	triangles := []float32{
-		-1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0,
-		1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0,
-		1.0, -1.0, 1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0,
-		1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-		-1.0, -1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0,
-		1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0,
-		-1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-		1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0,
-		1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
-		1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, -1.0,
-		1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0,
-		1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
+		-1.0, 0.0, -1.0, -1.0, 0.0, 1.0, -1.0, 2.0, 1.0,
+		1.0, 2.0, -1.0, -1.0, 0.0, -1.0, -1.0, 2.0, -1.0,
+		1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, -1.0,
+		1.0, 2.0, -1.0, 1.0, 0.0, -1.0, -1.0, 0.0, -1.0,
+		-1.0, 0.0, -1.0, -1.0, 2.0, 1.0, -1.0, 2.0, -1.0,
+		1.0, 0.0, 1.0, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0,
+		-1.0, 2.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+		1.0, 2.0, 1.0, 1.0, 0.0, -1.0, 1.0, 2.0, -1.0,
+		1.0, 0.0, -1.0, 1.0, 2.0, 1.0, 1.0, 0.0, 1.0,
+		1.0, 2.0, 1.0, 1.0, 2.0, -1.0, -1.0, 2.0, -1.0,
+		1.0, 2.0, 1.0, -1.0, 2.0, -1.0, -1.0, 2.0, 1.0,
+		1.0, 2.0, 1.0, -1.0, 2.0, 1.0, 1.0, 0.0, 1.0,
+
+		10.0, 0.0, 10.0, 10.0, 0.0, -10.0, -10.0, 0.0, -10.0,
+		10.0, 0.0, 10.0, -10.0, 0.0, -10.0, -10.0, 0.0, 10.0,
 	}
-	tex := textureFromData(triangles)
+	counts := []float32{
+		12, 2,
+	}
+
+	scene := textureFromData(gl.Ptr(triangles), len(triangles), gl.TEXTURE0, gl.RGB32F, gl.RGB, gl.FLOAT)
+	nTriangles := textureFromData(gl.Ptr(counts), len(counts), gl.TEXTURE1, gl.R32F, gl.RED, gl.FLOAT)
 	width, height := window.GetSize()
 
 	// Uniforms
 	gl.UseProgram(prog)
-	texUniform := gl.GetUniformLocation(prog, gl.Str("tex\x00"))
+	nObjsUniform := gl.GetUniformLocation(prog, gl.Str("n_objs\x00"))
+	sceneUniform := gl.GetUniformLocation(prog, gl.Str("scene\x00"))
 	nTrianglesUniform := gl.GetUniformLocation(prog, gl.Str("n_triangles\x00"))
 	dirUniform := gl.GetUniformLocation(prog, gl.Str("dir\x00"))
 	eyeUniform := gl.GetUniformLocation(prog, gl.Str("eye\x00"))
@@ -51,26 +60,37 @@ func Run(window *glfw.Window) {
 	widthUniform := gl.GetUniformLocation(prog, gl.Str("width\x00"))
 	heightUniform := gl.GetUniformLocation(prog, gl.Str("height\x00"))
 
-	materialAmbiantUniform := gl.GetUniformLocation(prog, gl.Str("material.ambiant\x00"))
-	materialDiffuseUniform := gl.GetUniformLocation(prog, gl.Str("material.diffuse\x00"))
-	materialSpecularUniform := gl.GetUniformLocation(prog, gl.Str("material.specular\x00"))
-	materialShininessUniform := gl.GetUniformLocation(prog, gl.Str("material.shininess\x00"))
+	material0AmbiantUniform := gl.GetUniformLocation(prog, gl.Str("material[0].ambiant\x00"))
+	material0DiffuseUniform := gl.GetUniformLocation(prog, gl.Str("material[0].diffuse\x00"))
+	material0SpecularUniform := gl.GetUniformLocation(prog, gl.Str("material[0].specular\x00"))
+	material0ShininessUniform := gl.GetUniformLocation(prog, gl.Str("material[0].shininess\x00"))
+
+	material1AmbiantUniform := gl.GetUniformLocation(prog, gl.Str("material[1].ambiant\x00"))
+	material1DiffuseUniform := gl.GetUniformLocation(prog, gl.Str("material[1].diffuse\x00"))
+	material1SpecularUniform := gl.GetUniformLocation(prog, gl.Str("material[1].specular\x00"))
+	material1ShininessUniform := gl.GetUniformLocation(prog, gl.Str("material[1].shininess\x00"))
 
 	lightDirUniform := gl.GetUniformLocation(prog, gl.Str("light.direction\x00"))
 	lightAmbiantUniform := gl.GetUniformLocation(prog, gl.Str("light.ambiant\x00"))
 	lightIntensityUniform := gl.GetUniformLocation(prog, gl.Str("light.intensity\x00"))
 
-	gl.Uniform1i(texUniform, 0)
-	gl.Uniform1i(nTrianglesUniform, int32(len(triangles)/9))
+	gl.Uniform1i(nObjsUniform, int32(len(counts)))
+	gl.Uniform1i(sceneUniform, 0)
+	gl.Uniform1i(nTrianglesUniform, 1)
 	gl.Uniform1i(widthUniform, int32(width))
 	gl.Uniform1i(heightUniform, int32(height))
 
-	gl.Uniform4f(materialAmbiantUniform, 0.25, 0.25, 0.25, 1)
-	gl.Uniform4f(materialDiffuseUniform, 0.4, 0.4, 0.4, 1)
-	gl.Uniform4f(materialSpecularUniform, 0.774597, 0.774597, 0.774597, 1)
-	gl.Uniform1f(materialShininessUniform, 76.8)
+	gl.Uniform4f(material0AmbiantUniform, 0.25, 0.25, 0.25, 1)
+	gl.Uniform4f(material0DiffuseUniform, 0.4, 0.4, 0.4, 1)
+	gl.Uniform4f(material0SpecularUniform, 0.774597, 0.774597, 0.774597, 1)
+	gl.Uniform1f(material0ShininessUniform, 76.8)
 
-	gl.Uniform3f(lightDirUniform, -1.54, -0.2, 2.3)
+	gl.Uniform4f(material1AmbiantUniform, 0.2, 0.2, 0.2, 1)
+	gl.Uniform4f(material1DiffuseUniform, 1, 1, 1, 0)
+	gl.Uniform4f(material1SpecularUniform, 1, 1, 1, 0)
+	gl.Uniform1f(material1ShininessUniform, 0)
+
+	gl.Uniform3f(lightDirUniform, -1.54, -4, 2.3)
 	gl.Uniform4f(lightAmbiantUniform, 1, 1, 1, 1)
 	gl.Uniform1f(lightIntensityUniform, 0.95)
 
@@ -83,11 +103,24 @@ func Run(window *glfw.Window) {
 		}
 	})
 
+	buttonClicked := false
+	window.SetMouseButtonCallback(func(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
+		if button == glfw.MouseButton1 {
+			if action == glfw.Press {
+				buttonClicked = true
+			} else if action == glfw.Release {
+				buttonClicked = false
+			}
+		}
+	})
+
 	mx, _ := window.GetCursorPos()
 	theta := 0.0
 	window.SetCursorPosCallback(func(w *glfw.Window, xpos float64, ypos float64) {
-		dx := xpos - mx
-		theta += dx * 0.01
+		if buttonClicked {
+			dx := xpos - mx
+			theta += dx * 0.01
+		}
 		mx = xpos
 	})
 
@@ -96,7 +129,7 @@ func Run(window *glfw.Window) {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// View
-		eye := mgl.Vec3{7, 1.5, 7}
+		eye := mgl.Vec3{7, 2.5, 7}
 		rot := mgl.Rotate3DY(float32(theta))
 		eye = rot.Mul3x1(eye)
 
@@ -113,7 +146,9 @@ func Run(window *glfw.Window) {
 		gl.Uniform3f(upUniform, up.X(), up.Y(), up.Z())
 
 		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, tex)
+		gl.BindTexture(gl.TEXTURE_1D, scene)
+		gl.ActiveTexture(gl.TEXTURE1)
+		gl.BindTexture(gl.TEXTURE_1D, nTriangles)
 
 		gl.BindVertexArray(vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, 6)

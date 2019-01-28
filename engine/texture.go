@@ -1,22 +1,22 @@
 package engine
 
 import (
+	"unsafe"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-func textureFromData(data []float32) uint32 {
-	// Create one OpenGL texture
+func textureFromData(data unsafe.Pointer, length int, id uint32, iformat int32, format uint32, t uint32) uint32 {
 	var textureID uint32
 	gl.GenTextures(1, &textureID)
 
-	// "Bind" the newly created texture : all future texture functions will modify this texture
-	gl.ActiveTexture(gl.TEXTURE0)
+	gl.ActiveTexture(id)
 	gl.BindTexture(gl.TEXTURE_1D, textureID)
 
 	gl.TexParameteri(gl.TEXTURE_1D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_1D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 
-	gl.TexImage1D(gl.TEXTURE_1D, 0, gl.RGB32F, int32(len(data)), 0, gl.RGB, gl.FLOAT, gl.Ptr(data))
+	gl.TexImage1D(gl.TEXTURE_1D, 0, iformat, int32(length), 0, format, t, data)
 
 	return textureID
 }
