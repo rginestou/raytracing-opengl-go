@@ -85,7 +85,7 @@ func Run(window *glfw.Window) {
 	gl.Uniform4f(material0SpecularUniform, 0.774597, 0.774597, 0.774597, 1)
 	gl.Uniform1f(material0ShininessUniform, 76.8)
 
-	gl.Uniform4f(material1AmbiantUniform, 0.2, 0.2, 0.2, 1)
+	gl.Uniform4f(material1AmbiantUniform, 0.3, 0.3, 0.3, 1)
 	gl.Uniform4f(material1DiffuseUniform, 1, 1, 1, 0)
 	gl.Uniform4f(material1SpecularUniform, 1, 1, 1, 0)
 	gl.Uniform1f(material1ShininessUniform, 0)
@@ -124,9 +124,18 @@ func Run(window *glfw.Window) {
 		mx = xpos
 	})
 
+	window.SetSizeCallback(func(w *glfw.Window, width, height int) {
+		gl.Uniform1i(widthUniform, int32(width))
+		gl.Uniform1i(heightUniform, int32(height))
+	})
+
+	gl.Enable(gl.BLEND)
 	glfw.SwapInterval(1)
 	for !window.ShouldClose() && isRunning {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		width, height := window.GetSize()
+		gl.Viewport(0, 0, int32(width), int32(height))
 
 		// View
 		eye := mgl.Vec3{7, 2.5, 7}

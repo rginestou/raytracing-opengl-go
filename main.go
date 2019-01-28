@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	window.Create(512, 512)
+	window.Create(600, 600)
 
 	engine.Run(window.GetPtr())
 

@@ -153,7 +153,7 @@ void main() {
 
 		// Ray vector
 		vec3 ray = normalize(normalize(dir)*3 +
-			right * (UV.x+offset_x/width) +
+			right * (UV.x*width/height+offset_x/width) +
 			up * (UV.y+offset_y/height));
 
 		face_intersect f_inter = face_through(ray, eye);
@@ -161,7 +161,6 @@ void main() {
 		vec4 color_tmp = light.ambiant;
 		if (f_inter.face_id >= 0) {
 			int obj = f_inter.obj;
-			obj = 0;
 
 			// Face exposition
 			float exposition = dot(normalize(f_inter.normal), normalize(-light.direction));
